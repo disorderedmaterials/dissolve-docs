@@ -124,11 +124,11 @@ it was ruled out almost immediately.
 ## Links
 
 - Issue
-  [#899][https://github.com/disorderedmaterials/dissolve/issues/899]
+  [#899](https://github.com/disorderedmaterials/dissolve/issues/899)
   charts the initial work on this decision.
-- The [toml][https://toml.io/en/] format home page
-- The [toml11][https://github.com/ToruNiina/toml11] library
-- The [JSON][https://www.json.org/json-en.html] format home page
-- The [YAML][https://yaml.org/] format home page
-- The [XML][https://www.w3.org/XML/] format home page
-- The [Dhall][https://dhall-lang.org/] format home page
+- The [toml](https://toml.io/en/) format home page
+- The [toml11](https://github.com/ToruNiina/toml11) library
+- The [JSON](https://www.json.org/json-en.html) format home page
+- The [YAML](https://yaml.org/) format home page
+- The [XML](https://www.w3.org/XML/) format home page
+- The [Dhall](https://dhall-lang.org/) format home page
