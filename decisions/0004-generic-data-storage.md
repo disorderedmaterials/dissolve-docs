@@ -1,6 +1,6 @@
 # Generic Data Storage
 
-- Status: **Proposed**
+- Status: **Accepted**
 - Deciders: TGAY
 - Date: 24-03-2021
 
