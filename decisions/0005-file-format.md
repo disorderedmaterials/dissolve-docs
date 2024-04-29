@@ -49,7 +49,7 @@ was similar enough to the API of the top YAML library that it would be
 possible to quickly switch out implementations, if a problem with the
 library or format was found.
 
-## Positive Condequences
+## Positive Consequences
 
 - The `LineParser` class and most of our IO code can be eliminated,
   with this functionality being moved into the library.
