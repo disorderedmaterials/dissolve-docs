@@ -1,4 +1,4 @@
-# Graph Display Architecture for QML
+# WIP: Graph Display Architecture for QML
 
 **Authors:**
 
@@ -40,22 +40,6 @@ ameliorates most of these issues.
 - One glance at the workflow gives an overview of all of the modules
   and their relations
 
-There exist multiple libraries that will provide this type of
-graphical display, but each has its own issues.  [Qt Node
-Editor](https://github.com/paceholder/nodeeditor) does not natively
-support QML and thus will require significant work to provide a
-consistent experience with the rest of the
-application. [QuickQanava](https://github.com/cneben/QuickQanava?tab=readme-ov-file)
-requires the construction and maintenance of an explicit graph object,
-as opposed to providing an abstract interface that we can build our
-own model again.  Additionally, at the time of this writing,
-QuickQanava does not build on Mac or Linux
-
-Thus, while it would be preferred to use an existing library, the
-amount of effort needed to bring one of these libraries in line with
-our desired capabilities is in the realm of the effort in creating a
-new library.
-
 
 ## 3 Proposed Implementation
 
@@ -66,6 +50,10 @@ classDiagram
   class AbstractGraphModel {
       +nodes() : AbstractListModel~NodeInterface~
       +edges() : AbstractListModel~EdgeInterface~
+      #createNode(string)
+      #deleteNode(int)
+      #createEdge(int, int, int, int)
+      #deleteEdge(int)
   }
   <<Abstract>> AbstractGraphModel
   class NodeInterface {
@@ -100,7 +88,19 @@ implements the `NodeInterface` in the Qt properties.  The other
 property, `edges`, is similar, except that the mandatory interface is
 the `EdgeInterface`.
 
-[^1]: Although the author does have some strong, possibly contraversial opinions.
+The `AbstractGraphModel` also requires four slots for accepting
+signals from the interface.  The `createNode` slot takes a string that
+corresponds to the `type` property of the Node Interface and appends a
+new Node of the correct type.  Correspondingly, `deleteNode` takes the
+index of a node and removes that node from the model.  In the same
+manner, `deleteEdge` takes an edge index and removes the corresponding
+edge.  Finally, the `createEdge` slot requires four indices,
+corresponding to the index of the source node, the index of the output
+within that source node, the index of the destination node, and the
+index of the input within that destination.
+
+[^1]: Although the author does have some strong, possibly
+    contraversial opinions.
 
 ### 3.2 NodeInterface
 
@@ -143,71 +143,99 @@ over the `edges` and draw the splines.
 
 ## 4 Metrics & Dashboards
 
-N/A
+The final implementation will need to provide the following abilities:
+
+- Add new nodes of any type
+- Drag nodes to a new position
+- Draw connections between nodes with the mouse
+- Delete connections
+- Auto-arrange nodes
+- Display the nodes at multiple zoom levels
+- Scroll around the node environment
+
+None of these actions should leave the graph in an invalid state.
 
 ## 5 Drawbacks
+
+- This project provides a significant time sink for at least one developer.
+
+- Even once the general library is written, more developer time will
+  be needed to write the Dissolve specific uses of the library
 
 
 ## 6 Alternatives
 
-*What are other ways of achieving the same outcome?*
+[Qt Node Editor](https://github.com/paceholder/nodeeditor) does not
+natively support QML and thus will require significant work to provide
+a consistent experience with the rest of the application.
+
+[QuickQanava](https://github.com/cneben/QuickQanava?tab=readme-ov-file)
+requires the construction and maintenance of an explicit graph object,
+as opposed to providing an abstract interface that we can build our
+own model again.  Additionally, at the time of this writing,
+QuickQanava does not build on Mac or Linux
 
 ## 7 Potential Impact and Dependencies
 
-*Here, we aim to be mindful of our environment and generate empathy towards others who may be impacted by our decisions.*
-
-- *What other systems or teams are affected by this proposal?*
-- *How could this be exploited by malicious attackers?*
+This could have a significant impact on the structure of the input
+file, since it represents a major change in the state of the data.
+Furthermore, this may be a significant break change, as it would not
+be a trivial matter to convert existing, linear code into the new
+graph based setup.
 
 ## 8 Unresolved questions
+  
+### 8.1 Invalid Graphs
 
-- Do we truly want an `AbstractListModel` for the `edges` and `nodes`?
-  It would also be possible to use `AbtractTableModel` or
-  `AbstractItemModel`.  I chose `AbstractListModel` since it is the
-  easier to subclass, but all of these models have an element of
-  ordering that we currently do not care about.  If we do care in the
-  future, it might be better to have used `AbstractListModel`, but
-  that also might be adding a bunch of complication now for
-  functionality that we will never use.
+Users might attempt to connect nodes in incompatible way
+(e.g. connecting a string to a value expecting an int) or fail to
+provide a node with all of the information that it requires.  More
+generally, the system needs to deal with the possibility of invalid
+graphs.
+  
+This first method is to simply forbid invalid graphs.  The model
+should reject any attempt to create invalid edges or delete nodes that
+are required.  This had advantages in design and implementation, but
+places limits on what can provide a good user experience.  For
+example, every possible node input must have a **valid** default
+value, so that the connection to that input can be deleted.
+  
+The second method is to allow invalid graphs, but refuse to run them.
+This provides more flexibility in the user interface, but also
+provides the challenge of informing the user about invalid graphs.  A
+user might edit a graph, then switch to a different tab, come back ten
+hours later and be very confused why their simulation will not run.
+This becomes especially perilous in the case of saving files.  Should
+it possible to save an input file with an invalid graph?  If it is,
+then the user has been handed a tool to create files that break the
+CLI version of Dissolve.  If saving invalid graphs is forbidden, then
+a user is stuck unable to save hours of work until they have fixed the
+problem with their graph.
+
+### 8.2 Underlying iteration model
+
+
+Do we truly want an `AbstractListModel` for the `edges` and `nodes`?
+It would also be possible to use `AbtractTableModel` or
+`AbstractItemModel`.  I chose `AbstractListModel` since it is the
+easier to subclass, but all of these models have an element of
+ordering that we currently do not care about.  If we do care in the
+future, it might be better to have used `AbstractListModel`, but that
+also might be adding a bunch of complication now for functionality
+that we will never use.
+
+### 8.3 Raw spline coordinates
+
+Should the `EdgeInterface` truly provide raw coordinates?  An
+alternative implementation would be to simply provide a source and
+destination and leave the drawing up to the view.  It would also be a
+more accurate representation of the data that we have.  The
+disadvantage is finding a valid representation of the source and
+destination that can be passed in the interface.  This is especially
+relevant since we are not merely connecting nodes together, but
+individual components of nodes, which might each have multiple inputs
+and outputs.
 
 ## 9 Conclusion
 
-*Here, we briefly outline why this is the right decision to make at this time and move forward!*
-
-## 10 RFC Process Guide, remove this section when done
-
-*By writing an RFC, you're giving insight to your team on the direction you're taking. There may not be a right or better decision in many cases, but we will likely learn from it. By authoring, you're making a decision on where you want us to go and are looking for feedback on this direction from your team members, but ultimately the decision is yours.*
-
-This document is a:
-
-- thinking exercise, prototype with words.
-- historical record, its value may decrease over time.
-- way to broadcast information.
-- mechanism to build trust.
-- tool to empower.
-- communication channel.
-
-This document is not:
-
-- a request for permission.
-- the most up to date representation of any process or system
-
-**Checklist:**
-
-- [ ]  Copy template
-- [ ]  Draft RFC (think of it as a wireframe)
-- [ ]  Share as WIP with folks you trust to gut-check
-- [ ]  Send pull request when comfortable
-- [ ]  Label accordingly
-- [ ]  Assign reviewers (ask your manager if in doubt)
-- [ ]  Merge yourself with two approved reviews
-
-**Recommendations**
-
-- Tag RFC title with [WIP] if you're still ironing out details.
-- Tag RFC title with [newbie] if you're trying out something experimental or you're not entirely convinced of what you're proposing.
-- Tag RFC title with [SWARCH] if you'd like to schedule a SWARCH review to discuss the RFC.
-- If there are areas that you're not convinced on, tag people who you consider may know about this and ask for their input.
-- If you have doubts, ask your manager for help moving something forward.
-- As the author/s, this is _your decision_. You are empowered to choose to move forward despite dissenting comments. We're not looking for consensus-driven decision-making.
-- The success of the implementation of your proposal depends on how this decision relates to our company's objectives and priorities.
+N/A
