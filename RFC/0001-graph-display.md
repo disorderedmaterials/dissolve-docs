@@ -64,14 +64,15 @@ The base of the implementation is an `AbstractGraphModel` class.
 ```mermaid
 classDiagram
   class AbstractGraphModel {
-      +nodes() : AbstractListModel<NodeInterface>
-      +edges() : AbstractListModel<EdgeInterface>
+      +nodes() : AbstractListModel~NodeInterface~
+      +edges() : AbstractListModel~EdgeInterface~
   }
   <<Abstract>> AbstractGraphModel
   class NodeInterface {
     + x : float
     + y : float
     + name: String
+    + icon: Icon
     + type: String
   }
   <<Interface>> NodeInterface
@@ -80,29 +81,72 @@ classDiagram
     + start : Point2D
     + end : Point2D
     + endHandle : Point2D
+    + style : int
   }
   <<Interface>> EdgeInterface
   AbstractGraphModel *-- NodeInterface
   AbstractGraphModel *-- EdgeInterface
 ```
 
+### 3.1 AbstractGraphModel
 
+The `AbstractGraphModel` defines the interface to our graph.  The
+internal representation of the graph is both beyond the scope of this
+document[^1] and independent of the behaviour of the library.  All
+that matters is that the class which represents the graph contains two
+Qt properties.  The first property is `nodes`, which returns an object
+that is a subclass of `AbstractListModel` and each node returned
+implements the `NodeInterface` in the Qt properties.  The other
+property, `edges`, is similar, except that the mandatory interface is
+the `EdgeInterface`.
 
-*This is the core of your proposal, and its purpose is to help you think through the problem because [writing is thinking](https://medium.learningbyshipping.com/writing-is-thinking-an-annotated-twitter-thread-2a75fe07fade).*
+[^1]: Although the author does have some strong, possibly contraversial opinions.
 
-*Consider:*
+### 3.2 NodeInterface
 
-- *using diagrams to help illustrate your ideas.*
-- *including code examples if you're proposing an interface or system contract.*
-- *linking to project briefs or wireframes that are relevant.*
+Each node must implement five properties. The first two, `x` and `y`,
+define the position of the node on the screen.  The `name` and `icon`
+provide the label and image for the top of the node.  Finally, the
+`type` describe what kind of information is contained in the node.
+The repeater delegate can use a
+[DelegateChooser](https://doc.qt.io/qt-6/qml-qt-labs-qmlmodels-delegatechooser.html)
+to select the correct QML file to display the node after dispatching
+on the `type`.
+
+### 3.3 EdgeInterface
+
+Each edge implements five properties to do describe the spline
+connecting the nodes.  The `start` and `end` properties describe the
+exact starting and ending positions of the spline.  The `startHandle`
+and `endHandle` are the positions of the spline handels for the
+corresponding endpoints.  Finally, the `style` gives an index of the
+type of line being drawn.  For example, curves containing `int` values
+might have an index of 1 and `string` values an index of 2.  This
+provides the View with the information to display different edges
+while still deferring to the View about the exact display
+(e.g. allowing different colours to be chosen in a dark mode).
+
+### 3.4 Implementation
+
+In the actual QML, we will create a `GraphNodeView` that takes two
+parameters.  First first parameter is the `AbstractGraphModel` that
+contains the graph information.  The second is a delegate that accepts
+the `NodeInterface` and returns a group of widgets.  This delegate
+will *not* be responsible for adding the title bar to the node or
+drawing the node border.
+
+The implementation of this QML will be two `Repeaters`.  The first
+will iterate over the `nodes`, create the header and border, and use
+the provided delegate to populate the nodes.  The second will iterate
+over the `edges` and draw the splines.
+
 
 ## 4 Metrics & Dashboards
 
-*What are the main metrics we should be measuring? For example, when interacting with an external system, it might be the external system latency. When adding a new table, how fast would it fill up?*
+N/A
 
 ## 5 Drawbacks
 
-*Are there any reasons why we should not do this? Here we aim to evaluate risk and check ourselves.*
 
 ## 6 Alternatives
 
@@ -117,7 +161,14 @@ classDiagram
 
 ## 8 Unresolved questions
 
-*What parts of the proposal are still being defined or not covered by this proposal?*
+- Do we truly want an `AbstractListModel` for the `edges` and `nodes`?
+  It would also be possible to use `AbtractTableModel` or
+  `AbstractItemModel`.  I chose `AbstractListModel` since it is the
+  easier to subclass, but all of these models have an element of
+  ordering that we currently do not care about.  If we do care in the
+  future, it might be better to have used `AbstractListModel`, but
+  that also might be adding a bunch of complication now for
+  functionality that we will never use.
 
 ## 9 Conclusion
 
