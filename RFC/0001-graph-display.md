@@ -64,10 +64,29 @@ The base of the implementation is an `AbstractGraphModel` class.
 ```mermaid
 classDiagram
   class AbstractGraphModel {
-      +AbstractListModel nodes()
-      +AbstractListModel edges()
+      +nodes() : AbstractListModel<NodeInterface>
+      +edges() : AbstractListModel<EdgeInterface>
   }
+  <<Abstract>> AbstractGraphModel
+  class NodeInterface {
+    + x : float
+    + y : float
+    + name: String
+    + type: String
+  }
+  <<Interface>> NodeInterface
+  class EdgeInterface {
+    + startHandle : Point2D
+    + start : Point2D
+    + end : Point2D
+    + endHandle : Point2D
+  }
+  <<Interface>> EdgeInterface
+  AbstractGraphModel *-- NodeInterface
+  AbstractGraphModel *-- EdgeInterface
 ```
+
+
 
 *This is the core of your proposal, and its purpose is to help you think through the problem because [writing is thinking](https://medium.learningbyshipping.com/writing-is-thinking-an-annotated-twitter-thread-2a75fe07fade).*
 
